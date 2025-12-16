@@ -3,7 +3,7 @@ import asyncio
 from constants import MODEL_RESPONSE_FORMAT
 from openai import AsyncOpenAI
 from rate_limiter import RateLimitedLauncher
-from utils import csv_to_list_of_lists
+from utils import csv_to_list_of_lists, save_to_file
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -16,7 +16,15 @@ async def ask(row, use_context=False, enhance=False):
     """
 
     question, expected, order, context = row[0], row[1], row[2], row[3]
+    
+    input = []
 
+    if enhance:
+        input.append({ "role": "system", "content": [{ "type": "text", "text": f"<Enhancement agent prompt (keep it small)>" }]})
+
+    if use_context:
+        input.append({ "role": "system", "content": [{ "type": "text", "text": f"Consider that all of these statements are true: {context}" }]})
+    
     input = [{ "role": "user", "content": [{ "type": "text", "text": question }]}]
 
     completion = await client.chat.completions.create(
@@ -40,16 +48,11 @@ async def main():
     actual_entries = csv_to_list_of_lists('./src/data/actual_entries_4k.csv')
     false_entries = csv_to_list_of_lists('./src/data/false_entries_4k.csv')
 
-    union_entries = [*actual_entries, *false_entries]
-    union_entries = union_entries[:10]
+    # Here we want our datasets divided by origin type because some metrics wont fit both of them.
+    actual_results = await launcher.run(actual_entries, ask)
+    false_results = await launcher.run(false_entries, ask)
 
-    results = await launcher.run(union_entries, ask)
-    
-    print("\nResults [FIRST 5] =========================")
-    for result in results[:5]:
-        print(f"Statement: ", result[0])
-        print(f"Expected/Actual answer: {result[1]}/{result[2]}")
-        print(f"Order: ", result[3])
-        print("\n- - - - - - - - - - - - - - - - ")
+    save_to_file(actual_results, './src/results/GPT5-mini_STD-TEST_ACTUAL.csv.csv')
+    save_to_file(false_results, './src/results/GPT5-mini_STD-TEST_ACTUAL.csv.csv')
 
 asyncio.run(main())
