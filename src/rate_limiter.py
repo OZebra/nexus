@@ -37,18 +37,18 @@ class RateLimitedLauncher:
             period=1.0
         )
 
-    async def _run_one(self, worker_func, item, progress):
+    async def _run_one(self, worker_func, item, progress, useContext, enhance, directContext):
         await self.rate_limiter.acquire()   # ⬅ rate limit enforced here
-        result = await worker_func(item)
+        result = await worker_func(item, useContext, enhance, directContext)
         progress.update(1)
         return result
 
-    async def run(self, items, worker_func):
+    async def run(self, items, worker_func, useContext=False, enhance=False, directContext=True):
         progress = tqdm(total=len(items))
 
         tasks = [
             asyncio.create_task(
-                self._run_one(worker_func, item, progress)
+                self._run_one(worker_func, item, progress, useContext, enhance, directContext)
             )
             for item in items
         ]

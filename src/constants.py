@@ -23,3 +23,5 @@ MODEL_RESPONSE_FORMAT = {
     "strict": True
   }
 }
+
+LOGICAL_VERIFIER_AGENT = "You are a logical relation verifier. Evaluate statements of the form: “A is a hypernym of B”. Interpret hypernym as strict class subsumption: B ⊆ A. Return TRUE if the relation holds logically, otherwise return FALSE. Do not infer relations from causation, purpose, or context."
